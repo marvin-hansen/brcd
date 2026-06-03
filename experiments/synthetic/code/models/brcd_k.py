@@ -1467,16 +1467,12 @@ def brcd(normal_df,
     # 5) Sum over samples to get log-likelihood per root, add uniform prior, normalize
     log_likelihood = log_p_data_given_R.sum(axis=1)            # shape=(num_roots,)
     log_posterior = log_likelihood + np.log(prior)
-   
-    posterior = np.exp(log_posterior - log_posterior.max())
-    # posterior /= posterior.sum() # normalize the posterior
     end_time = time.time()
     elasped = end_time - start_time
-    # Get indices that would sort posterior in descending order
-    sorted_indices = np.argsort(-posterior)
-    # Sort root_causes and posterior accordingly
+    # Rank by p(R|D) ∝ p(D|R)p(R), i.e. by log_posterior (avoids exp underflow when one candidate dominates).
+    sorted_indices = np.argsort(-log_posterior)
     sorted_root_causes = [root_causes[i] for i in sorted_indices]
-    sorted_posterior = [posterior[i] for i in sorted_indices]
+    sorted_posterior = [log_posterior[i] for i in sorted_indices]
     return sorted_root_causes, sorted_posterior, elasped
 
 

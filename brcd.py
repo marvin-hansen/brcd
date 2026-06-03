@@ -1852,12 +1852,10 @@ def brcd_update(joint_df,
     # 5) Sum over samples to get log-likelihood per root, add uniform prior, normalize
     log_likelihood = log_p_data_given_R.sum(axis=1)            # shape=(num_roots,)
     log_posterior = log_likelihood + np.log(prior)
-   
-    posterior = np.exp(log_posterior - log_posterior.max())
     end_time = time.time()
     elasped = end_time - start_time
 
-    return posterior, elasped
+    return log_posterior, elasped
 
 
 def brcd_helper(normal_df,
@@ -1906,17 +1904,17 @@ def brcd_helper(normal_df,
                                     brcd_update=brcd_update,
                                     n_workers=8,            # tune to CPU cores
                                     renormalize=False,
-                                    log_space=False,        # set True if brcd_update returns log-posteriors
+                                    log_space=True,         # brcd_update returns log-posteriors
                                     use_threads=False,      # set True to use ThreadPoolExecutor
                                     show_progress=True
                                 )
 
         elapsed = time.time() - start_time
-        posterior = out['final_posterior']
+        log_posterior = out['final_posterior']
 
 
     else:
-         posterior, elapsed = brcd_update(joint_df,
+         log_posterior, elapsed = brcd_update(joint_df,
                 cpdag, 
                 cols, 
                 combos, 
@@ -1927,11 +1925,10 @@ def brcd_helper(normal_df,
 
 
    
-    # Get indices that would sort posterior in descending order
-    sorted_indices = np.argsort(-posterior)
-    # Sort root_causes and posterior accordingly
+    # Rank by p(R|D) ∝ p(D|R)p(R), i.e. by log_posterior (avoids exp underflow when one candidate dominates).
+    sorted_indices = np.argsort(-log_posterior)
     sorted_root_causes = [combos[i] for i in sorted_indices]
-    sorted_posterior = [posterior[i] for i in sorted_indices]
+    sorted_posterior = [log_posterior[i] for i in sorted_indices]
     if num_root_causes_candidates == 1:
         sorted_root_causes = [t[0] for t in sorted_root_causes]
     return {
