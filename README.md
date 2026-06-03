@@ -6,7 +6,6 @@ This repository contains the implementation of BRCD (Bayesian Root Cause Discove
 
 To replicate the experiments in this repository, you need to read through the README files under each folder to setup the correct environment.
 
-
 ## Using BRCD with Your Own Data
 
 
